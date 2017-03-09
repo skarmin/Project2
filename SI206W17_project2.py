@@ -16,6 +16,7 @@ import requests
 import tweepy
 import twitter_info # Requires you to have a twitter_info file in this directory
 from bs4 import BeautifulSoup
+import re
 
 ## Tweepy authentication setup
 ## Fill these in in the twitter_info.py file
@@ -38,13 +39,15 @@ try:
 	cache_file = open(CACHE_FNAME,'r')
 	cache_contents = cache_file.read()
 	CACHE_DICTION = json.loads(cache_contents)
+	cache_file.close()
 except:
 	CACHE_DICTION = {}
 
 
 ## PART 1 - Define a function find_urls.
-
-
+def find_urls(string):
+	list_of_urls = re.findall(r"https?:\/\/[A-Za-z0-9]{2,}(?:\.+[a-zA-Z0-9]{2,})+", string) #confused about {2,}
+	return list_of_urls
 
 ## INPUT: any string
 ## RETURN VALUE: a list of strings that represents all of the URLs in the input string
@@ -53,9 +56,6 @@ except:
 ## find_urls("http://www.google.com is a great site") should return ["http://www.google.com"]
 ## find_urls("I love looking at websites like http://etsy.com and http://instagram.com and stuff") should return ["http://etsy.com","http://instagram.com"]
 ## find_urls("the internet is awesome #worldwideweb") should return [], empty list
-
-
-
 
 
 
@@ -70,19 +70,39 @@ except:
 ## Start with this page: https://www.si.umich.edu/directory?field_person_firstname_value=&field_person_lastname_value=&rid=All  
 ## End with this page: https://www.si.umich.edu/directory?field_person_firstname_value=&field_person_lastname_value=&rid=All&page=11 
 
+def get_umsi_data():
+	if 'umsi_directory_data' in CACHE_DICTION:
+		return CACHE_DICTION["umsi_directory_data"]
 
+	HTML_lst = []
+	base_url = "https://www.si.umich.edu/directory?field_person_firstname_value=&field_person_lastname_value=&rid=All"
+	response = requests.get(base_url, headers={'User-Agent': 'SI_CLASS'}).text
+	HTML_lst.append(response)
 
+	for loop in range(12):
+		new_url = base_url + '&page=' + str(loop)
+		response = requests.get(new_url, headers={'User-Agent': 'SI_CLASS'}).text
+		HTML_lst.append(response)
 
+	CACHE_DICTION["umsi_directory_data"] = HTML_lst
+	cache_file = open(CACHE_FNAME,'w') # open the cache file for writing
+	cache_file.write(json.dumps(CACHE_DICTION)) # make the whole dictionary holding data and unique identifiers into a json-formatted string, and write that wholllle string to a file so you'll have it next time!
+	cache_file.close()
 
-
+	return (HTML_lst)
 
 ## PART 2 (b) - Create a dictionary saved in a variable umsi_titles 
 ## whose keys are UMSI people's names, and whose associated values are those people's titles, e.g. "PhD student" or "Associate Professor of Information"...
-
-
-
-
-
+print (get_umsi_data())
+umsi_titles = {}
+HTML_lst = get_umsi_data
+for page in HTML_lst:
+    soup = BeautifulSoup(page,"html.parser")
+    people = soup.find_all("div",{"class":"views-row"})
+    for person in people:
+        name = person.find("div", {"property":"dc:title"}).text
+        title = person.find("div", {"class":"field-name-field-person-titles"}).text
+        umsi_titles[name] = title
 
 
 ## PART 3 (a) - Define a function get_five_tweets
@@ -105,7 +125,6 @@ except:
 
 
 ########### TESTS; DO NOT CHANGE ANY CODE BELOW THIS LINE! ###########
-
 class CachingTests(unittest.TestCase):
 	def test_cache_diction(self):
 		self.assertEqual(type(CACHE_DICTION),type({}),"Testing whether you have a CACHE_DICTION dictionary")
@@ -126,12 +145,11 @@ class CachingTests(unittest.TestCase):
 		f.close()
 		jv = json.loads(s)
 		self.assertTrue("twitter_University of Michigan" in jv, "Checking whether the Twitter University of Michigan identifier is correctly in the cache")
-
 class PartOne(unittest.TestCase):
 	def test_findurls_oneurl(self):
 		self.assertEqual(find_urls("http://www.google.com is a great site"),["http://www.google.com"])
 	def test_findurls_multurls(self):
-		self.assertEqual(find_urls("I love looking at websites like http://etsy.com and http://instagram.com and lol.com and stuff"),["http://etsy.com","http://instagram.com"])
+	 	self.assertEqual(find_urls("I love looking at websites like http://etsy.com and http://instagram.com and lol.com and stuff"),["http://etsy.com","http://instagram.com"])
 	def test_findurls_multurls_all(self):
 		self.assertEqual(find_urls("I love looking at websites like http://etsy.com and http://instagram.com and https://www.bbc.co.uk and stuff"),["http://etsy.com","http://instagram.com","https://www.bbc.co.uk"])
 	def test_findurls_none(self):
