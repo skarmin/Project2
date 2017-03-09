@@ -93,7 +93,9 @@ def get_umsi_data():
 
 ## PART 2 (b) - Create a dictionary saved in a variable umsi_titles 
 ## whose keys are UMSI people's names, and whose associated values are those people's titles, e.g. "PhD student" or "Associate Professor of Information"...
-print (get_umsi_data())
+
+
+# print (get_umsi_data())
 umsi_titles = {}
 HTML_lst = get_umsi_data
 for page in HTML_lst:
@@ -104,24 +106,48 @@ for page in HTML_lst:
         title = person.find("div", {"class":"field-name-field-person-titles"}).text
         umsi_titles[name] = title
 
+#NEED EXPLANATION!!!
+
 
 ## PART 3 (a) - Define a function get_five_tweets
 ## INPUT: Any string
 ## Behavior: See instructions. Should search for the input string on twitter and get results. Should check for cached data, use it if possible, and if not, cache the data retrieved.
 ## RETURN VALUE: A list of strings: A list of just the text of 5 different tweets that result from the search.
 
+def get_five_tweets(string):
+	top_five = []
+	if "twitter_University" not in CACHE_DICTION:
+		CACHE_DICTION["twitter_University"] = {}
+	if string in CACHE_DICTION["twitter_University"]:
+		resp = CACHE_DICTION["twitter_University"][(string)]
+    else:
+		resp = api.search(string)
+		CACHE_DICTION["twitter_University"][string] = resp
+		cache_file = open(CACHE_FNAME, 'w')
+		cache_file.write(json.dumps(CACHE_DICTION))
+		cache_file.close()
+
+    for item in response["statuses"][:5]:
+    	top_five.append(item["text"])
+
+    return(top_five)
 
 
+    #ISSUE WITH STRING
 
 ## PART 3 (b) - Write one line of code to invoke the get_five_tweets function with the phrase "University of Michigan" and save the result in a variable five_tweets.
 
-
+top_five = get_five_tweets("University of Michigan")
 
 
 ## PART 3 (c) - Iterate over the five_tweets list, invoke the find_urls function that you defined in Part 1 on each element of the list, and accumulate a new list of each of the total URLs in all five of those tweets in a variable called tweet_urls_found. 
 
 
-
+tweet_urls_found = []
+for tweet in five_tweets:
+    urls = find_urls(tweet)
+    for url in urls:
+        tweet_urls_found.append(url)
 
 
 ########### TESTS; DO NOT CHANGE ANY CODE BELOW THIS LINE! ###########
