@@ -16,6 +16,7 @@ import requests
 import tweepy
 import twitter_info # Requires you to have a twitter_info file in this directory
 from bs4 import BeautifulSoup
+import re
 
 ## Tweepy authentication setup
 ## Fill these in in the twitter_info.py file
@@ -51,7 +52,7 @@ except:
 ## find_urls("the internet is awesome #worldwideweb") should return [], empty list
 
 def find_urls(x):
-	list_of_urls = re.findall(r"https?:\/\/[A-Za-z0-9]{2,}(?:\.+[a-zA-Z0-9]{2,})+", x) #confused about {2,}
+	list_of_urls = re.findall(r"https?://[^\s]*?\...[^\s]*", x)
 	return (list_of_urls)
 
 
@@ -115,7 +116,7 @@ def get_five_tweets(x):
 		resp = CACHE_DICTION["twitter_University of Michigan"][x]
 	else:
 		resp = api.search(x)
-		CACHE_DICTION["twitter_University of Michigan"][x]
+		CACHE_DICTION["twitter_University of Michigan"][x] = resp
 
 		cache_file = open(CACHE_FNAME, 'w')
 		cache_file.write(json.dumps(CACHE_DICTION))
@@ -127,12 +128,18 @@ def get_five_tweets(x):
 
 ## PART 3 (b) - Write one line of code to invoke the get_five_tweets function with the phrase "University of Michigan" and save the result in a variable five_tweets.
 
+five_tweets = get_five_tweets("University of Michigan")
 
 
 
 ## PART 3 (c) - Iterate over the five_tweets list, invoke the find_urls function that you defined in Part 1 on each element of the list, and accumulate a new list of each of the total URLs in all five of those tweets in a variable called tweet_urls_found. 
 
-
+tweet_urls_found = []
+for tweet in five_tweets:
+	urls = find_urls(tweet)
+	for url in urls:
+		tweet_urls_found.append(url)
+tweet_urls_found = tuple(tweet_urls_found)
 
 
 
