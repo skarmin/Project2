@@ -107,8 +107,22 @@ for page in HTML_lst:
 ## INPUT: Any string
 ## Behavior: See instructions. Should search for the input string on twitter and get results. Should check for cached data, use it if possible, and if not, cache the data retrieved.
 ## RETURN VALUE: A list of strings: A list of just the text of 5 different tweets that result from the search.
+def get_five_tweets(x):
+	tweets = []
+	if "twitter_University of Michigan" not in CACHE_DICTION:
+		CACHE_DICTION["twitter_University of Michigan"] = {}
+	if x in CACHE_DICTION["twitter_University of Michigan"]:
+		resp = CACHE_DICTION["twitter_University of Michigan"][x]
+	else:
+		resp = api.search(x)
+		CACHE_DICTION["twitter_University of Michigan"][x]
 
-
+		cache_file = open(CACHE_FNAME, 'w')
+		cache_file.write(json.dumps(CACHE_DICTION))
+		cache_file.close()
+	for result in resp["statuses"][:5]:
+		tweets.append(result["text"])
+	return(tweets)
 
 
 ## PART 3 (b) - Write one line of code to invoke the get_five_tweets function with the phrase "University of Michigan" and save the result in a variable five_tweets.
